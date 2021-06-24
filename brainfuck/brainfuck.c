@@ -4,13 +4,10 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-
-//Struct
-/**
-* buffer for reading input correctly
-*/
+#include <string.h>
+#define NB_STATE 100000
 typedef struct Buffer{
-    int value[1000];
+    char value[100000];
     int ind, size;
 }Buffer;
 //Types of possible actions to do
@@ -43,29 +40,51 @@ void delTree(STree* s){
 //Global
 FILE* in;
 FILE* out;
+char STOP=0;//Set to 1 if EOF is reached
+char INTERACTIVE=1;
 Buffer buffer;
-int state[100];
-int i = 0;
-//Util
+
+//Utils
 /**
 * Read caracters at input
 */
 int readChar(){
-    if(buffer.ind==buffer.size){
-        printf("> ");
+    static char fileRead=0;
+    if(!fileRead && !INTERACTIVE){
+        fileRead=1;
         buffer.ind=0;
-        buffer.size=0;
-        char c = ' ';
-        for(int i = 0; i<1000 && !(c=='\n' || c=='\0' || c==EOF); i++){
-            c=getc(in);
-            buffer.value[buffer.size++] = c;
+        int c = 0;
+        while(c != EOF){
+            c = getc(in);
+            if(c=='>' || c=='<' || c=='+' || c=='-' || c=='[' || c==']' || c==',' || c=='.')
+                buffer.value[buffer.size++]=c;
         }
     }
-    return buffer.value[buffer.ind++];
+    if((buffer.value[buffer.ind]=='\0' || buffer.ind==0) && INTERACTIVE){
+        printf("> ");
+        buffer.ind=0;
+        fgets(buffer.value, 10000, in);
+        if(!strchr(buffer.value, '\n')){
+            int c = 0;
+            while (c != '\n' && c != EOF)
+                c = getc(in);
+            if(c==EOF){
+                STOP=1;
+                return -1;
+            }
+        }
+    }else if(buffer.size==buffer.ind && !INTERACTIVE){
+        STOP=1;
+        return -1;
+    }
+    int c = buffer.value[buffer.ind];
+    buffer.ind++;
+    return c;
 }
 //Analyse
 /**
 * Create the syntax tree.
+* You can also uses it yourself if you define your own "readChar" function.
 * @param fromLoop 0 if call from the beginning, 1 if call recursively from a loop
 * @return The newly created STree, or NULL
 */
@@ -78,6 +97,8 @@ STree* createSTree(char fromLoop){
     while(!stop){
         stop=1;
         int c = readChar();
+        if(STOP)//EOF
+            return NULL;
         switch(c){
             case '[' :
                 This->value=LOOP;
@@ -90,6 +111,10 @@ STree* createSTree(char fromLoop){
                     This->lastChild=child;
                     child = createSTree(1);//Child are also syntax trees
                 }
+                if(STOP){
+                    printf("Unexpected EOF while parsing\n");
+                    return NULL;
+                }
                 return This;
             break;
             case ']' :
@@ -100,7 +125,7 @@ STree* createSTree(char fromLoop){
             case '>' : This->value=NEXT; return This;
             case '<' : This->value=PREC; return This;
             case '.' : This->value=PRINT; return This;
-            case ';' : This->value=READ; return This;
+            case ',' : This->value=READ; return This;
             case '+' : This->value=INC; return This;
             case '-' : This->value=DEC; return This;
             case 'q' : exit(0);
@@ -116,6 +141,8 @@ ERROR:
 * @param s Syntax tree to be evaluated
 */
 void evalSTree(STree* s){
+    static int i = 0;
+    static int state[NB_STATE];
     STree* act = s;
     //Evaluate each member of the linked list (s->next->next->...)
     while(act){
@@ -125,10 +152,17 @@ void evalSTree(STree* s){
                 while(state[i] && j++<10)
                     evalSTree(act->firstChild);//Evaluate loop body
             break;
-            case NEXT : i++; break;
-            case PREC : i--; break;
+            case NEXT :
+                i++;
+                i%=NB_STATE;
+            break;
+            case PREC :
+                i--;
+                if(i<0)
+                    i+=NB_STATE;
+            break;
             case PRINT : putc(state[i], out); break;
-            case READ : printf("Enter a number :\n");state[i]=getc(in);getc(in); break;
+            case READ : state[i]=getc(stdin); break;
             case INC : state[i]++; break;
             case DEC : state[i]--; break;
         }
@@ -155,9 +189,11 @@ void showTree(STree* This){
 }
 
 //Main
-int main(){
-    printf("Welcome to this nice brainfuck interpretor !\nYou can do the followings actions :\n\
-RQ : Maximum line (or file) size is limited to 1000 caracters.\n\
+int main(int argc, char** argv){
+    printf("Welcome to this nice brainfuck interpretor !\n\
+RQ : Maximum line size is limited to 10000 caracters.\n\
+You can run it directly to use it interactivly, or specify a fileName to interpret the corresponding programm.\n\
+You can do the followings actions :\n\
 > equiv to i++ in C\n\
 < equiv to i-- in C\n\
 + equiv to state[i]+=1 in C\n\
@@ -168,11 +204,19 @@ RQ : Maximum line (or file) size is limited to 1000 caracters.\n\
 . equiv to putc(state[i], stdin) in C.\n\
 And type q to quit\n\
 Have fun ! ;-)\n");
-    in  = stdin;
     out = stdout;
     buffer.ind=0;
-    buffer.size=0;
-    while(1){
+    if(argc>1){
+        printf("Not interactivly running\n\n");
+        in  = fopen(argv[1], "r");
+        if(!in){
+            printf("Error opening the file %s", argv[1]);
+            exit(0);
+        }
+        INTERACTIVE=0;
+    }else
+        in  = stdin;
+    while(!STOP){
         STree* treeAct = createSTree(0);
         evalSTree(treeAct);
         delTree(treeAct);
