@@ -106,6 +106,24 @@ ERROR:
     free(This);
     return NULL;
 }
+//Debug
+void showTree(STree* This){
+    static int level=0;
+    if(This==NULL){
+        printf("-1\n");
+        return;
+    }
+    level++;
+    STree* next = This;
+    while(next){
+        for(int i = 1; i<level; i++)
+            printf("  ");
+        printf("v=%i\n", next->value);
+        showTree(next->firstChild);
+        next = next->next;
+    }
+    level--;
+}
 /**
 * Evaluate the syntax tree
 */
@@ -115,8 +133,9 @@ void evalSTree(STree* s){
     while(act){
         switch(act->value){
             case LOOP : 
-                while(state[i])
-                    evalSTree(s->firstChild);//Evaluate loop body
+                int j = 0;
+                while(state[i] && j++<10)
+                    evalSTree(act->firstChild);//Evaluate loop body
             break;
             case NEXT : i++; break;
             case PREC : i--; break;
