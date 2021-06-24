@@ -1,3 +1,7 @@
+/*
+* Code which interpret a brainfuck code
+* Copyright Damien Lejosne 2021, all right reserved
+*/
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -61,8 +65,9 @@ int readChar(){
 }
 //Analyse
 /**
-* Create the syntax tree
-* Return -1 if get [ after a ]
+* Create the syntax tree.
+* @param fromLoop 0 if call from the beginning, 1 if call recursively from a loop
+* @return The newly created STree, or NULL
 */
 STree* createSTree(char fromLoop){
     STree* This = (STree*) malloc(sizeof(STree));
@@ -106,26 +111,9 @@ ERROR:
     free(This);
     return NULL;
 }
-//Debug
-void showTree(STree* This){
-    static int level=0;
-    if(This==NULL){
-        printf("-1\n");
-        return;
-    }
-    level++;
-    STree* next = This;
-    while(next){
-        for(int i = 1; i<level; i++)
-            printf("  ");
-        printf("v=%i\n", next->value);
-        showTree(next->firstChild);
-        next = next->next;
-    }
-    level--;
-}
 /**
 * Evaluate the syntax tree
+* @param s Syntax tree to be evaluated
 */
 void evalSTree(STree* s){
     STree* act = s;
@@ -146,6 +134,24 @@ void evalSTree(STree* s){
         }
         act=act->next;
     }
+}
+//Debug
+void showTree(STree* This){
+    static int level=0;
+    if(This==NULL){
+        printf("-1\n");
+        return;
+    }
+    level++;
+    STree* next = This;
+    while(next){
+        for(int i = 1; i<level; i++)
+            printf("  ");
+        printf("v=%i\n", next->value);
+        showTree(next->firstChild);
+        next = next->next;
+    }
+    level--;
 }
 
 //Main
