@@ -80,9 +80,8 @@ void stree_eval(STree* s, FILE* out){
     //Evaluate each member of the linked list (s->next->next->...)
     while(act){
         switch(act->value){
-            case LOOP : 
-                int j = 0;
-                while(state[i] && j++<10)
+            case LOOP :
+                while(state[i])
                     stree_eval(act->firstChild, out);//Evaluate loop body
             break;
             case NEXT :
