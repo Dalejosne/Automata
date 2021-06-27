@@ -28,4 +28,6 @@ brainfucki_o_win:
 	$(MINGW) -c brainfucki.c $(INCLUDE)
 
 clean:
-	rm -f *.o brainfucki *.exe
+	rm -f *.o
+clean_all:clean
+	rm -f brainfucki *.exe
