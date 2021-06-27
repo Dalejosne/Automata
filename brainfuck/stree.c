@@ -41,14 +41,14 @@ STree* new_stree(char fromLoop, FILE* in, Buffer* buffer, char INTERACTIVE, char
                 }
                 if(*prgmShouldStop){
                     printf("Unexpected EOF while parsing\n");
-                    return NULL;
+                    goto ERROR;
                 }
                 return This;
             break;
             case ']' :
                 if(!fromLoop)
                     printf("Error : unexpected ] while parsing\n");
-                goto ERROR;
+                goto ERROR;//Not really an error, but it is easier to delete the tree and return NULL
             break;
             case '>' : This->value=NEXT; return This;
             case '<' : This->value=PREC; return This;
