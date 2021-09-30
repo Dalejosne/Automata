@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "game_of_life"
+name = "gol-lib"
 version = "0.1.0"
