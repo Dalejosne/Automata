@@ -16,7 +16,7 @@ For more information about conway game of life, have a look to [this](https://ww
 To install it as a dependency, just add this line to your Cargo.toml :
 ```toml
 [dependencies]
-game_of_life = "0.1.0"
+gol-lib = "0.1.0"
 ```
 If you want to install it locally, do :
 ```sh
