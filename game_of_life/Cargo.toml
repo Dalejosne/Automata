@@ -5,6 +5,7 @@ edition = "2018"
 license = "MPL-2.0"
 authors = ["Damien Lejosne <damlejo6445@gmail.com>"]
 readme = "README.md"
+documention = "https://docs.rs/gol-lib/0.1.1"
 repository = "https://github.com/Dalejosne/Automata/tree/main/game_of_life"
 description = "A nice game of life package"
 
