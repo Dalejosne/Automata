@@ -12,6 +12,34 @@ So what you have to do is just create an automata, set some cells (to meke them 
 For more information about conway game of life, have a look to [this](https://www.conwaylife.com)
 ***Have fun !***
 
+## Quickstart
+
+To install, see installation instructions
+Then, trie this code :
+```rust
+use std::time::Duration;
+use std::thread::sleep;
+use game_of_life::*;
+
+fn main(){
+	let mut g = GameOfLife::new(45, 25);
+	g.set_element(5, 5);
+	g.set_element(6, 5);
+	g.set_element(7, 5);
+	g.set_element(6, 6);
+	clear();
+	reverse();
+	loop {
+		g.show();
+		g.update();
+		refresh();
+		clear();
+		sleep(Duration::from_millis(500));
+	}
+}
+
+```
+
 ## Install
 To install it as a dependency, just add this line to your Cargo.toml :
 ```toml

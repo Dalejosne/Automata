@@ -1,8 +1,6 @@
 use std::time::Duration;
 use std::thread::sleep;
 use game_of_life::*;
-/*mod ansi_rust;
-use ansi_rust::*;*/
 
 fn main(){
 	let mut g = GameOfLife::new(45, 25);
