@@ -1,1 +1,0 @@
-window.ALL_CRATES = ["game_of_life"];

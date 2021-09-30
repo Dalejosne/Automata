@@ -1,1 +1,0 @@
-/run/media/michele/Windows/Users/MICHELE/Documents/programmation/automates/Automata/game_of_life/target/debug/libgame_of_life.rlib: /run/media/michele/Windows/Users/MICHELE/Documents/programmation/automates/Automata/game_of_life/src/ansi_rust.rs /run/media/michele/Windows/Users/MICHELE/Documents/programmation/automates/Automata/game_of_life/src/lib.rs
