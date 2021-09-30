@@ -1,6 +1,6 @@
 use std::time::Duration;
 use std::thread::sleep;
-use game_of_life::*;
+use gol_lib::*;
 
 fn main(){
 	let mut g = GameOfLife::new(45, 25);
