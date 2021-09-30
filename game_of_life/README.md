@@ -14,8 +14,8 @@ For more information about conway game of life, have a look to [this](https://ww
 
 ## Quickstart
 
-To install, see installation instructions
-Then, trie this code :
+To install, see installation instructions.\
+Then, try this code :
 ```rust
 use std::time::Duration;
 use std::thread::sleep;
