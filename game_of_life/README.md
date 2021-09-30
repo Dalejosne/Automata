@@ -44,7 +44,7 @@ fn main(){
 To install it as a dependency, just add this line to your Cargo.toml :
 ```toml
 [dependencies]
-gol-lib = "0.1.0"
+gol-lib = "0.1.3"
 ```
 If you want to install it locally, do :
 ```sh
