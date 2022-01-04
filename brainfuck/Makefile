@@ -36,6 +36,7 @@ doc:
 	make -C docs html
 
 clean:
+	make -C docs clean
 	rm -f *.o
 clean_all:clean
 	rm -f $(BIN)/brainfucki $(BIN)/*.exe
