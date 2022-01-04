@@ -4,6 +4,7 @@ Here, you will find some funny automata.
 For now, it includes :
 - a ***brainfuck*** interpreter (written in C)
 - a ***game of life*** library (writen in rust)
+- a ***LL parser*** library (for now in rust, C and python are comming soon)
 
 I will add some more automata in the future, and if there are some that you absolutely want to add, tell me so I'll include them.\
 I'll also try to add some libraries utilities to create easily automata. If you want to see a "real" language inplementation in pure
