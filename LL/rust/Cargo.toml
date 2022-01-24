@@ -1,7 +1,13 @@
 [package]
 name = "llk"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
+license = "MPL-2.0"
+authors = ["Damien Lejosne <damlejo6445@gmail.com>"]
+readme = "../README.md"
+documentation = "https://docs.rs/llk/0.1.1"
+repository = "https://github.com/Dalejosne/Automata/tree/main/LL/rust"
+description = "A fast, little an easy to understand LL(k) (LL(1) for now) library and compiler compiler (soon)"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

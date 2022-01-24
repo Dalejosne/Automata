@@ -1,7 +1,9 @@
+//TODO NONE explicit actions description and handling
 // Copyright Damien Lejosne 2021. See LICENSE for more informations
 //! This crate allow you to create LL(1) (for now, LL(k) are coming soon) parsers.\
 //! You should have a look to the followings links to learn more about these parsers :\
 //! [LL parsers : Wikipédia](https://en.wikipedia.org/wiki/LL_parser) and [LL parsers : INSA](http://coursenligne.insa-rouen.fr/UNIT-CoursDeCompilation/Theme02/Support_Papier_Theme02.pdf)
+
 ///Error codes
 pub mod err_code {
 	///Unexpected EOF
@@ -13,6 +15,7 @@ pub mod err_code {
 	///Uncorresponding token
 	pub const M_TOKEN : u32 = 3;
 }
+
 
 use err_code::*;
 #[derive(Debug)]
@@ -31,29 +34,29 @@ impl SyntaxError {
 		SyntaxError{code : code, token_concerned : t, additional_info : info}
 	}
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct STree
 {
-	value : Token,
-	children : Vec<STree>
+	pub value : Token,
+	pub children : Vec<STree>
 }
 impl std::fmt::Display for STree {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		fn aux(this : &STree, lvl : u32) -> String {
 			let mut ident = String::new();
 			for _ in 0..lvl {
-				ident = format!("{}\t", ident);
+				ident = format!("{ident}\t");
 			}
-			let mut ret = format!("{}STree : value = {}\n{}\tchildrens :\n", ident, this.value, ident);
+			let mut ret = format!("{ident}STree : value = {}\n{ident}\tchildrens :\n", this.value);
 			for child in &this.children {
-				ret = format!("{}{}\n", ret, aux(child, lvl + 1));
+				ret = format!("{ret}{}\n", aux(child, lvl + 1));
 			}
 			ret
 		}
 		write!(f, "{}", aux(self, 0))
 	}
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 ///Enum which give you the ability to
 pub enum Token {
 	///A terminal
@@ -71,12 +74,19 @@ pub enum Token {
 		id : u32
 	}
 }
-
+impl Token {
+	pub fn new_terminal(id : u32, value : String, pos : u32) -> Token {
+		return Token::Terminal{id : id, value : value, pos : pos};
+	}
+	pub fn new_nb(id : u32) -> Token {
+		return Token::NTerminal{id : id};
+	}
+}
 impl std::fmt::Display for Token {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Token::Terminal{id, pos, value} => {
-				return write!(f, "T : {} is {}, begin at {} and finish at {}", value, *id, *pos, *pos as usize + value.len());
+				return write!(f, "T : {value} is {}, begin at {} and finish at {}", *id, *pos, *pos as usize + value.len());
 			}
 			Token::NTerminal{id} => {
 				return write!(f, "NT : {}", *id);
@@ -85,16 +95,19 @@ impl std::fmt::Display for Token {
 	}
 }
 //Internal, just here to simplified treatments
-struct Terminal {
-	id : u32,
-	pos : u32,
-	value : String
+#[derive(Debug)]
+pub struct Terminal {
+	pub id : u32,
+	pub pos : u32,
+	pub value : String
 }
 
 ///Ids of tokens reserved by the library.
 pub mod default_id {
 	///EOF Id
 	pub const EOF : u32 = 0;
+	///Default token : Equivalent to the empty token
+	pub const NONE : u32 = 1;
 }
 ///Tokens reserved by the library.
 pub mod default_token {
@@ -115,7 +128,7 @@ pub mod default_token {
 ///A ::= 'a' B 'b'\
 ///With :
 ///```
-///Rule::new(vec![0, 3, 1]);
+///llk::Rule::new(vec![vec![0, 3, 1]]);
 ///```
 pub struct Rule {
 	derivations : Vec<Vec<u32>>
@@ -142,6 +155,31 @@ pub struct LL1Parser<'a>
 }
 
 impl<'a> LL1Parser<'a> {
+	///Function to create a new LL1 parser.\
+	///Usage :
+	///```
+	/// //Terminal token (begin at 2 because of the 2 token reserved by the library)
+	///const B : u32 = 2;
+	///const LEFT_PAR : u32 = 3;
+	///const RIGHT_PAR : u32 = 4;
+	/// //Non terminal token begin
+	///const A : u32 = 5;
+	///let mut my_parser =
+	///    llk::LL1Parser::new(
+	///        //Rules
+	///        vec![
+	///        llk::Rule::new(vec![
+	///            vec![LEFT_PAR, B, RIGHT_PAR],
+	///        ]),//A
+	///    ],
+	///    //Actions linked to the rules
+	///    vec![&|stree|{println!("{}", *stree)}],
+	///    A,//axiom (first rule to be evaluated)
+	///    A //Non terminal tokens begin
+	///);
+	///```
+	///NB : Your parser is not usable immediatly after you've called this function.\
+	///You should have a look to the following functions before ;)
 	pub fn new(rules : Vec<Rule>, actions : Vec<&'a dyn Fn(&mut STree)>, axiom : u32, nt_begin : u32) -> LL1Parser {
 		let nb_rules = rules.len();
 		let mut this = LL1Parser{
@@ -170,17 +208,55 @@ impl<'a> LL1Parser<'a> {
 				}
 			}
 		}
-		this.table = vec![vec![u32::MAX; nt_begin as usize]; nb_derivations];
+		this.table = vec![vec![u32::MAX; nt_begin as usize]; nb_rules];
 		this
 	}
-	///## Function which will create a table.
-	///### Usage :
+	///Function which will create a table.
+	///Usage :
 	///```
+	/// //Terminal token (begin at 2 because of the 2 token reserved by the library)
+	///const B : u32 = 2;
+	///const LEFT_PAR : u32 = 3;
+	///const RIGHT_PAR : u32 = 4;
+	/// //Non terminal token begin
+	///const A : u32 = 5;
+	///let mut my_parser =
+	///    llk::LL1Parser::new(
+	///        //Rules
+	///        vec![
+	///        llk::Rule::new(vec![
+	///            vec![LEFT_PAR, B, RIGHT_PAR],
+	///        ]),//A
+	///    ],
+	///    //Actions linked to the rules
+	///    vec![&|stree|{println!("{}", *stree)}],
+	///    A,//axiom (first rule to be evaluated)
+	///    A //Non terminal tokens begin
+	///);
 	///my_parser.make_table();
 	///```
 	///You should call this function before calling the "analyse" function.\
 	///This function will return an error message if an error occured. For example :\
 	///```
+	/// //Terminal token (begin at 2 because of the 2 token reserved by the library)
+	///const B : u32 = 2;
+	///const LEFT_PAR : u32 = 3;
+	///const RIGHT_PAR : u32 = 4;
+	/// //Non terminal token begin
+	///const A : u32 = 5;
+	///let mut my_parser =
+	///    llk::LL1Parser::new(
+	///        //Rules
+	///        vec![
+	///        llk::Rule::new(vec![
+	///            vec![LEFT_PAR, B, RIGHT_PAR],
+	///        ]),//A
+	///    ],
+	///    //Actions linked to the rules
+	///    vec![&|stree|{println!("{}", *stree)}],
+	///    A,//axiom (first rule to be evaluated)
+	///    A //Non terminal tokens begin
+	///);
 	///match my_parser.make_table() {
 	///    Err(msg) => {
 	///        println!("Error while creating parsing table : {}", msg);//There was an error : print it.
@@ -214,8 +290,13 @@ impl<'a> LL1Parser<'a> {
 				//derivation[0] is a terminal ?
 				if t_act < this.nt_begin as usize {
 					term0[r_i].push(t_act as u32);
-					if this.table[r_i][t_act as usize] != u32::MAX {
-						return Err(format!("Left factorisation error for the rule {}", r_i + this.nt_begin as usize));
+					if this.table[r_i][t_act] != u32::MAX && t_act as u32 != default_id::NONE {
+						return Err(
+							format!(
+								"Left factorisation error for the {r_i}th rule (derivation {}).",
+								d_i + this.derivations_begin[r_i] as usize
+							)
+						);
 					}
 					this.table[r_i][t_act] = this.derivations_begin[r_i] + d_i as u32;
 					continue;
@@ -227,7 +308,7 @@ impl<'a> LL1Parser<'a> {
 				if term0[t_acti].len() == 0 {
 					match create_rule(this, t_acti, term0, is_in_progress) {
 						Err(err) => {
-							return Err(format!("{}\n\tNote : From rule {}", err, r_i + this.nt_begin as usize));
+							return Err(format!("{err}\n\tNote : From rule {}", r_i + this.nt_begin as usize));
 						}
 						Ok(()) => {}
 					}
@@ -280,30 +361,106 @@ impl<'a> LL1Parser<'a> {
 	///
 	///### Example :
 	///```
+	///const B : u32 = 2;
+	///const LEFT_PAR : u32 = 3;
+	///const RIGHT_PAR : u32 = 4;
+	/// //Non terminal token begin
+	///const A : u32 = 5;
+	/// //First of all, create the parser
+	///let mut my_parser =
+	///    llk::LL1Parser::new(
+	///        //Rules
+	///        vec![
+	///        llk::Rule::new(vec![
+	///            vec![LEFT_PAR, B, RIGHT_PAR],
+	///        ]),//A
+	///    ],
+	///    //Actions linked to the rules
+	///    vec![&|stree|{println!("{}", *stree)}],
+	///    A,//axiom (first rule to be evaluated)
+	///    A //Non terminal tokens begin
+	///);
+	/// //Then, make the corresponding tables as we saw in the function 'make_table()'.
+	///my_parser.make_table();
+	/// //Lets create a little list of tokens (we need to clone them here. To a more advanced example of lexer,
+	/// //you should have a look to the 'tokenize' closure in the main.rs file. I think it should not be too hard
+	/// //to understand).
+	///let T_L = llk::Token::Terminal{id : LEFT_PAR, value : String::from("("), pos : 0};
+	///let T_R = llk::Token::Terminal{id : RIGHT_PAR, value : String::from(")"), pos : 0};
+	///let T_B = llk::Token::Terminal{id : B, value : String::from("b"), pos : 0};
+	/// // (b)
+	/// //Here, everythings OK
+	///let tokens = [T_L.clone(), T_B.clone(), T_R.clone(), llk::default_token::T_EOF.clone()];
 	///let mut ind = 0;
-	///let tokens = [&T1, &T2, &T3, &T2, &T_EOF];
-	///match parser.analyse_tokens(|| {
+	///match my_parser.analyse_tokens(|| {
 	///        ind += 1;
 	///        if ind == tokens.len() {
 	///            return None;
 	///        }
-	///        return Some(tokens[ind - 1]);
+	///        return Some(tokens[ind - 1].clone());
 	///    }
 	///){
 	///    Ok((stree, warnings)) => {
 	///        //Do smthg with the stree
 	///        if warnings != String::from("") {
-	///            println!(warnings);
+	///            println!("{}", warnings);
+	///            panic!("Unexpected warning");
 	///        }
 	///    }
 	///    Err(e) => {
 	///        println!("{:?}", e);
 	///    }
 	///}
+	/// // (b))
+	/// //Here, we should got a warning : tokens remain unanalysed.
+	///let tokens1 = [T_L.clone(), T_B.clone(), T_R.clone(), T_B.clone(), llk::default_token::T_EOF.clone()];
+	///let mut ind = 0;
+	///match my_parser.analyse_tokens(|| {
+	///        ind += 1;
+	///        if ind == tokens1.len() {
+	///            return None;
+	///        }
+	///        return Some(tokens1[ind - 1].clone());
+	///    }
+	///){
+	///    Ok((stree, warnings)) => {
+	///        //Do smthg with the stree
+	///        if warnings != String::from("") {
+	///            println!("{}", warnings);
+	///            assert!(warnings == String::from("Warning : Tokens remain unanalysed."));
+	///        }
+	///    }
+	///    Err(e) => {
+	///        println!("{:?}", e);
+	///    }
+	///}
+	/// // (b
+	/// //Here, we should got an error : unexpected EOF.
+	///let tokens2 = [T_L.clone(), T_B.clone(), llk::default_token::T_EOF.clone()];
+	///let mut ind = 0;
+	///match my_parser.analyse_tokens(|| {
+	///        ind += 1;
+	///        if ind == tokens2.len() {
+	///            return None;
+	///        }
+	///        return Some(tokens2[ind - 1].clone());
+	///    }
+	///){
+	///    Ok((stree, warnings)) => {
+	///        //Do smthg with the stree
+	///        if warnings != String::from("") {
+	///            println!("{}", warnings);
+	///        }
+	///    }
+	///    Err(e) => {
+	///        //TODO assert!(warnings == String::from("Warning : Tokens remain unanalysed."));
+	///        println!("{:?}", e);
+	///    }
+	///}
 	///```
-	pub fn analyse_tokens<'b, F>(&mut self, mut get_token : F)
+	pub fn analyse_tokens<F>(&mut self, mut get_token : F)
 		-> Result<(STree, String), SyntaxError> //(stree, warnings), error
-		where F : FnMut() -> Option<&'b Token>
+		where F : FnMut() -> Option<Token>
 	{
 		//INITIALISATIONS
 		let mut warnings = String::from("");
@@ -314,12 +471,12 @@ impl<'a> LL1Parser<'a> {
 		//Contains (node_act, nb_children_remaining_to_push_to_node_act)
 		let mut tree_stack : Vec<(STree, u32, u32)> = Vec::new();
 		//The first token to be analysed
-		let mut t = match get_token() {
-			Some(Token::Terminal{id, value, pos}) => { Terminal{id : *id, value : value.clone(), pos : *pos} }
+		let mut token_act = match get_token() {
+			Some(Token::Terminal{id, value, pos}) => { Terminal{id : id, value : value.clone(), pos : pos} }
 			Some(Token::NTerminal{id}) => {
 				return Err(SyntaxError::new(
 					U_TERM,
-					Some(Token::NTerminal{id : *id}),
+					Some(Token::NTerminal{id : id}),
 					format!("Tokens expected in input, got a non terminal")
 					)
 				);
@@ -335,13 +492,16 @@ impl<'a> LL1Parser<'a> {
 		};
 
 		//ANALYSE
-		while let Some(top) = stack.pop() {
+		'main_loop : while let Some(top) = stack.pop() {
 			//Construct the stree
 			//TODO improve because it's ugly
 			let mut i_top = tree_stack.len();
-			if i_top > 1 {//Explain why > 1
+			//> 1 because we are popping and then pushing on the new top (NB : A i_top == 1 should be a bug)
+			//println!("{:?}", tree_stack);
+			if i_top > 1 {
+				//println!("top = {}\nnb_to_push{}\nd_i={}",tree_stack[i_top - 1].0, tree_stack[i_top - 1].1, tree_stack[i_top - 1].2);
 				let mut nb_node_to_push = tree_stack[i_top - 1].1;
-				while nb_node_to_push == 0 && i_top > 0 {
+				while nb_node_to_push == 0 && i_top > 1 {
 					i_top -= 1;
 					let last_vertex = match tree_stack.pop() {
 						Some((mut vertex, _, i_action)) => {
@@ -356,26 +516,29 @@ impl<'a> LL1Parser<'a> {
 				}
 			}
 
-			if t.id > self.nt_begin { //We are facing an unknown token
+			if token_act.id > self.nt_begin { //We are facing an unknown token
 				return Err(SyntaxError::new(
 					U_TOKEN,
-					Some(Token::Terminal{id : t.id, value : t.value, pos : t.pos}),
+					Some(Token::Terminal{id : token_act.id, value : token_act.value, pos : token_act.pos}),
 					String::from("Unknown token")
 					)
 				);
 			}
 
 			//Analyse if it is a terminal
-			if top < self.nt_begin {//Terminal token case
-				if top == t.id {
+			if top < self.nt_begin {
+				if top == token_act.id {
 					//Push it into the stree at the top of the stack
 					let i_top = tree_stack.len() - 1;
 					tree_stack[i_top].0.children.push(
-						STree {children : Vec::new(), value : Token::Terminal{id : t.id, value : t.value.clone(), pos : t.pos}}
+						STree {
+							children : Vec::new(),
+							value : Token::Terminal{id : token_act.id, value : token_act.value.clone(), pos : token_act.pos}
+						}
 					);
 					tree_stack[i_top].1 -= 1;
 				} else {
-					if t.id == default_id::EOF {
+					if token_act.id == default_id::EOF {
 						return Err(SyntaxError::new(
 							UEOF,
 							None,
@@ -385,18 +548,18 @@ impl<'a> LL1Parser<'a> {
 					}
 					return Err(SyntaxError::new(
 						M_TOKEN,
-						Some(Token::Terminal{id : t.id, value : t.value, pos : t.pos}),
-						format!("Uncorresponding token : {} expected, found {}", top, t.id)
+						Some(Token::Terminal{id : token_act.id, value : token_act.value, pos : token_act.pos}),
+						format!("Uncorresponding token : {top} expected, found {}", token_act.id)
 						)
 					);
 				}
 				//Get the next token
 				let next_t = match get_token() {
-					Some(Token::Terminal{id, value, pos}) => { Terminal{id : *id, value : value.to_string(), pos : *pos} }
+					Some(Token::Terminal{id, value, pos}) => { Terminal{id : id, value : value.to_string(), pos : pos} }
 					Some(Token::NTerminal{id}) => {
 						return Err(SyntaxError::new(
 							U_TERM,
-							Some(Token::NTerminal{id : *id}),
+							Some(Token::NTerminal{id : id}),
 							format!("Tokens expected in input, got a non terminal")
 							)
 						);
@@ -410,34 +573,76 @@ impl<'a> LL1Parser<'a> {
 						);
 					}
 				};
-				drop(t);
-				t = next_t;
-				continue;
+				drop(token_act);
+				token_act = next_t;
+				continue 'main_loop;
 			}
 
 			//Analyse if it is a non terminal
-			let d_i = self.table[(top - self.nt_begin) as usize][t.id as usize] as usize;
+			//We handle UEOF after because of NONE handling TODO explain why
+			let d_i = self.table[(top - self.nt_begin) as usize][token_act.id as usize] as usize;
 			if d_i == u32::MAX as usize {
-				return Err(
-				SyntaxError::new(
-					0,
-					None,
-					format!("There is no rule which correspond to the derivation : Rule {} doesn't begin by token {}", top, t.id)
-				)
-				);
+				if self.table[(top - self.nt_begin) as usize][default_id::NONE as usize] != u32::MAX {
+					let i_top = tree_stack.len();
+					tree_stack[i_top - 1].1 -= 1;
+					continue 'main_loop;
+				} else {
+					//Here, we handle UEOF
+					if token_act.id == default_id::EOF {
+						println!("EXPECTED");
+						return Err(SyntaxError::new(
+							UEOF,
+							None,
+							String::from("Unexpected EOF")
+							)
+						);
+					}
+					//ELSE
+					return Err(
+						SyntaxError::new(
+							0,
+							None,
+							format!(
+								"There is no rule which correspond to the derivation : Rule {top} doesn't begin by token {}",
+								token_act.id
+							)
+						)
+					);
+				}
 			}
 			let len = self.derivations[d_i].len();
 			tree_stack.push(
 				(
 				STree {children : Vec::with_capacity(len), value : Token::NTerminal{id : top}},
 				len as u32,
-				d_i as u32
+				d_i as u32 //The index of the action to execute is the same as the corresponding derivation index
 				)
 			);
 			for t_i in 1..len + 1 {
 				let t_to_push_i = len - t_i;
 				stack.push(self.derivations[d_i][t_to_push_i] as u32);
 			}
+		}
+
+		//If it remains more than one subtree from the analyse, it's because the last rule was a kind of list.
+		//Then, push every subtree until it remains one syntax tree : the main one (which also represent the axiom of the grammar).
+		let mut i_top = tree_stack.len();
+		let mut nb_node_to_push = tree_stack[i_top - 1].1;//If it panics, that's an internal error. Please report it.
+		while i_top > 1 {
+			i_top -= 1;
+			if nb_node_to_push != 0 {
+				panic!("Internal parser error : look at line 479 : more than one node remaining to push while not in the main loop");
+			}
+			let last_vertex = match tree_stack.pop() {
+				Some((mut vertex, _, i_action)) => {
+					self.actions[i_action as usize](&mut vertex);
+					vertex
+				}
+				None => { continue; } //Will never append since we stop at i_top = 1.
+			};
+			tree_stack[i_top - 1].0.children.push(last_vertex);
+			tree_stack[i_top - 1].1 -= 1;
+			nb_node_to_push = tree_stack[i_top - 1].1;
 		}
 
 		//RETURNS

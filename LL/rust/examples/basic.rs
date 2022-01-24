@@ -35,12 +35,23 @@ fn main() {
 	let r_p = Token::Terminal{id : RIGHT_PAR, value : String::from(")"), pos : 0};
 	let a_ = Token::Terminal{id : a, value : String::from("a"), pos : 0};
 	let mut ind = 0;
-	let tokens = vec![&l_p, &l_p, &l_p, &l_p, &a_, &r_p, &r_p, &r_p, &r_p, &default_token::T_EOF];
+	//To simplify the example, we use a lot of clone. It should not be necessary in real usage.
+	let tokens = vec![r_p.clone(),
+					  l_p.clone(),
+					  l_p.clone(),
+					  l_p.clone(),
+					  a_.clone(),
+					  r_p.clone(),
+					  r_p.clone(),
+					  r_p.clone(),
+					  r_p.clone(),
+					  default_token::T_EOF.clone()
+					  ];
 	match parser.analyse_tokens(
 		|| {
 			if ind < tokens.len() {
 				ind += 1;
-				return Some(tokens[ind - 1]);
+				return Some(tokens[ind - 1].clone());
 			}
 			return None;
 		}

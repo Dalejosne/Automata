@@ -1,25 +1,38 @@
 # LL parser
 Here, you will find a "LL" parser.
 
-Currently, I wrote the code in rust, C and python will come soon
+Currently, I wrote the code in rust. C and python are coming soon.
 
-## Quickstart
+- FEATURES :
+	- A quite fast, efficient both in memory and cpu ressources library
+	- A simple and short code (but I think its clarity can still be improved : feel free to contribute if you see some ways to achieve it !)
+	- Syntax tree (maybe its memory consumption may be improve : It's the main memory consumer of the code)
+	-  Actions on rules
+- TODO :
+	- Add compiler compiler usage and a more detailed documentation about the API
+	- Remove bug which makes execution fails with large files (stack exhausted panic in rust)
+	- Add C and python code
+	- Finish the compiler compiler
+	- Add LL(k) and LL(*) parsers
+
+## Quick start
 
 # Usage (rust)
-### Quickstart
+### Quick start
 
 To install, see installation instructions.\
 Then, try this code :
 ```rust
 use llk::*;
 
-const LEFT_PAR : u32 = 0;// (
-const RIGHT_PAR : u32 = 1; // )
-const a : u32 = 2; // a
+//We begin at 2 because 0 and 1 are reserved
+const LEFT_PAR : u32 = 2;// (
+const RIGHT_PAR : u32 = 3; // )
+const a : u32 = 4; // a
 
 //Non terminal tokens begin after terminal tokens
-const A : u32 = 3;
-const B : u32 = 4;
+const A : u32 = 5;
+const B : u32 = 6;
 
 fn main() {
 	let mut parser =
@@ -48,12 +61,24 @@ fn main() {
 	let r_p = Token::Terminal{id : RIGHT_PAR, value : String::from(")"), pos : 0};
 	let a_ = Token::Terminal{id : a, value : String::from("a"), pos : 0};
 	let mut ind = 0;
-	let tokens = vec![&l_p, &l_p, &l_p, &l_p, &a_, &r_p, &r_p, &r_p, &r_p, &default_token::T_EOF];
+	//Here, we are using a lot of clones because it's simpler, 
+	//but keep in mind that that's not a good practice
+	let tokens = vec![l_p.clone(),
+					  l_p.clone(),
+					  l_p.clone(),
+					  l_p.clone(),
+					  a_.clone(),
+					  r_p.clone(),
+					  r_p.clone(),
+					  r_p.clone(),
+					  r_p.clone(),
+					  default_token::T_EOF.clone()
+					];
 	match parser.analyse_tokens(
 		|| {
 			if ind < tokens.len() {
 				ind += 1;
-				return Some(tokens[ind - 1]);
+				return Some(tokens[ind - 1].clone());
 			}
 			return None;
 		}
@@ -75,7 +100,7 @@ fn main() {
 To install it as a dependency, just add this line to your Cargo.toml :
 ```toml
 [dependencies]
-llk = "0.1.0"
+llk = "0.1.1"
 ```
 If you want to install it locally, do :
 ```sh
