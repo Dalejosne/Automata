@@ -27,8 +27,8 @@ pub struct GameOfLife{
 impl GameOfLife{
 	pub fn new(nb_col:usize, nb_lig:usize) -> GameOfLife{
 		let mut new_g = GameOfLife{
-							nb_col:nb_col,
-							nb_lig:nb_lig,
+							nb_col,
+							nb_lig,
 							grid: Vec::with_capacity(nb_lig)
 						 };
 		for i in 0..nb_lig{
@@ -74,7 +74,7 @@ impl GameOfLife{
 	pub fn show(&self){
 		for i in 0..self.nb_lig{
 			for j in 0..self.nb_col{
-				if self.grid[i as usize][j as usize] {
+				if self.grid[i][j] {
 					show('#', j, i);
 				}else{
 					show(' ', j, i);
@@ -109,13 +109,13 @@ impl GameOfLife{
 				let mut nb_vies = 0;
 				for i in 0..3{
 					for j in 0..3{
-						if !(i==1 && j==1) && self.grid[(ilig+j-1) as usize][(icol+i-1) as usize] {
+						if !(i==1 && j==1) && self.grid[ilig+j-1][icol+i-1] {
 							nb_vies+=1;
 						}
 					}
 				}
-				if nb_vies == 3 || (nb_vies == 2 && self.grid[ilig as usize][icol as usize]) {
-					new_grid[ilig as usize][icol as usize] = true;
+				if nb_vies == 3 || (nb_vies == 2 && self.grid[ilig][icol]) {
+					new_grid[ilig][icol] = true;
 				}
 			}
 		}
@@ -123,7 +123,7 @@ impl GameOfLife{
 		//Copy the future value of the grid onto the grid
 		for ilig in 1..nb_lig-1{
 			for icol in 1..nb_col-1{
-				self.grid[ilig as usize][icol as usize] = new_grid[ilig as usize][icol as usize];
+				self.grid[ilig][icol] = new_grid[ilig][icol];
 			}
 		}
 	}
