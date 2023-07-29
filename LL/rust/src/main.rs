@@ -1,6 +1,7 @@
 // Copyright Damien Lejosne 2021. See LICENSE for more informations
 //TODO File size > 8 MB not handled correctly (too much memory allocated when not using default_mod, if we're using it,
 // maximum file size is reported to 100MB)
+//TODO Lexer correct special char handling
 //! This binary is a very simple compiler compiler : it allows you to create programming languages in a language
 //! with a syntax extremly close to the rust one (indeed, it's a superset of the rust syntax).\
 //! I use it for my personal projects because I like to use what I make myself, but some compiler compilers are far
@@ -18,16 +19,20 @@ const RULE_NAME : u32 = 4; // A word
 const ASSIGN : u32 = 5; // =
 const END : u32 = 6; // ;
 const SPECIAL : u32 = 7; // other
+const TERMINAL : u32 = 8;
 
 //Non terminal tokens begin after terminal tokens
-const CODE : u32 = 8;
-const WORD : u32 = 9;
-const LIST_WORDS : u32 = 10;
-const RULE : u32 = 11;
-const RULE_DEF : u32 = 12;
-const MAIN : u32 = 13;
-const LIST_RULE_DEF : u32 = 14;
-const LIST_NAME : u32 = 15;
+const TERMINALS : u32 = 9;
+const CODE : u32 = 10;
+const WORD : u32 = 11;
+const LIST_WORDS : u32 = 12;
+const RULE : u32 = 13;
+const LIST_RULE : u32 = 14;
+const RULE_DEF : u32 = 15;
+const MAIN : u32 = 16;
+const LIST_RULE_DEF : u32 = 17;
+const LIST_NAME : u32 = 18;
+const OPT_SPECIAL : u32 = 19;
 
 fn id_to_word(id:u32) -> String {
 	match id {
@@ -51,11 +56,55 @@ fn id_to_word(id:u32) -> String {
 	}
 }
 
-/*fn default_mod(st : &mut STree) {
-	if st.children.len() > 0 {
-		*st = st.children[0].clone();
+fn terminal_action(st : &mut STree) {
+	for _ in 1..st.children.len() {
+		st.children.pop().unwrap();
+	}
+}
+/*fn code_action(st : &mut STree) {
+	for _ in 1..st.children.len() {
+		st.children.pop().unwrap();
+	}
+}
+fn list_word_action(st : &mut STree) {
+	for _ in 1..st.children.len() {
+		st.children.pop().unwrap();
+	}
+}
+fn rule_action(st : &mut STree) {
+	for _ in 1..st.children.len() {
+		st.children.pop().unwrap();
+	}
+}
+fn rule_def_action(st : &mut STree) {
+	for _ in 1..st.children.len() {
+		st.children.pop().unwrap();
+	}
+}
+fn list_rule_def_action(st : &mut STree) {
+	for _ in 1..st.children.len() {
+		st.children.pop().unwrap();
 	}
 }*/
+fn list_name_action(st : &mut STree) {
+	println!("before : {st}");
+	if st.children.len() <= 1 {
+		return;
+	}
+	match st.children[1].value {
+		Token::NTerminal{id} if id == OPT_SPECIAL => {
+			let r1 = st.children[1].clone();
+			st.children[1] = st.children[2].clone();
+			st.children[2] = r1;
+			st.children.pop().unwrap();
+		}
+		_ => {}
+	}
+	for i in 0..st.children[1].children.len() {
+		st.children.push(st.children[1].children[i].clone());
+	}
+	println!("after : {st}");
+}
 
 fn parse_parser(contents : &mut String) {
 	let mut ind : usize = 0;
@@ -89,12 +138,16 @@ fn parse_parser(contents : &mut String) {
 		//Suppr white spaces
 		let mut letter_act = contents.as_bytes()[ind];
 		while is_special_char(letter_act) {
+			token.value.push(letter_act as char);
 			ind += 1;
 			if ind == contents.len() {
 				ind += 1;
 				return Some(default_token::T_EOF.clone());
 			}
 			letter_act = contents.as_bytes()[ind];
+		}
+		if token.value.len() > 0 {
+			return Some(Token::new_terminal(SPECIAL, token.value, token.pos));
 		}
 		//Get a rule name
 		let mut type_act = get_char_type(letter_act as char);
@@ -116,43 +169,55 @@ fn parse_parser(contents : &mut String) {
 			token.value.pop();
 			ind -= 1;
 		}
-		let ret = Token::new_terminal(token.id, token.value, token.pos);
-		return Some(ret);
+		if token.value == String::from("Terminal") {
+			return Some(Token::new_terminal(TERMINAL, token.value, token.pos));
+		}
+		return Some(Token::new_terminal(token.id, token.value, token.pos));
 	};
 	let mut parser =
 		LL1Parser::new(vec![
 			Rule::new(vec![
-				vec![LEFT_PAR, LIST_WORDS, RIGHT_PAR],//0
+				vec![TERMINAL, OPT_SPECIAL, LEFT_PAR, OPT_SPECIAL, LIST_NAME, RIGHT_PAR],//0
+			]),//TERMINALS
+			Rule::new(vec![
+				vec![LEFT_PAR, LIST_WORDS, RIGHT_PAR],//1
 			]),//CODE
 			Rule::new(vec![
-				vec![RULE_NAME],//1
-				vec![CODE],//2
-				vec![ASSIGN],//3
-				vec![SPECIAL],//4
-				vec![END],//5
+				vec![RULE_NAME],//2
+				vec![CODE],//3
+				vec![ASSIGN],//4
+				vec![SPECIAL],//5
+				vec![END],//6
 			]),//WORD
 			Rule::new(vec![
-				vec![WORD, LIST_WORDS],//6
-				vec![default_id::NONE]//7
+				vec![WORD, LIST_WORDS],//7
+				vec![default_id::NONE]//8
 			]),//LIST_WORDS
 			Rule::new(vec![
-				vec![RULE_NAME, ASSIGN, LIST_RULE_DEF, END]//8
+				vec![RULE_NAME, OPT_SPECIAL, ASSIGN, OPT_SPECIAL, LIST_RULE_DEF, END]//9
 			]),//RULE
 			Rule::new(vec![
-				vec![LIST_NAME, CODE],//9
+				vec![RULE, OPT_SPECIAL, LIST_RULE],//10
+				vec![default_id::NONE]//11
+			]),//LIST_RULE
+			Rule::new(vec![
+				vec![LIST_NAME, CODE],//12
 			]),//RULE_DEF
 			Rule::new(vec![
-				vec![RULE, MAIN],//12
-				vec![CODE]//13
+				vec![TERMINALS, OPT_SPECIAL, LIST_RULE, CODE]//13
 			]),//MAIN
 			Rule::new(vec![
-				vec![RULE_DEF, LIST_RULE_DEF],//10
-				vec![default_id::NONE]//11
+				vec![RULE_DEF, OPT_SPECIAL, LIST_RULE_DEF],//14
+				vec![default_id::NONE]//15
 			]),//LIST_RULE_DEF
 			Rule::new(vec![
-				vec![RULE_NAME, LIST_NAME],//12
-				vec![default_id::NONE]//13
+				vec![RULE_NAME, OPT_SPECIAL, LIST_NAME],//16
+				vec![default_id::NONE]//17
 			]),//LIST_NAME
+			Rule::new(vec![
+				vec![SPECIAL],//18
+				vec![default_id::NONE],//19
+			]),//OPT_SPECIAL
 		],
 		vec![&|_|{},
 			&|_|{},
@@ -168,9 +233,14 @@ fn parse_parser(contents : &mut String) {
 			&|_|{},
 			&|_|{},
 			&|_|{},
+			&|_|{},
+			&|_|{},
+			&list_name_action,
+			&|_|{},
+			&|_|{},
 			&|_|{}],
 		MAIN,
-		CODE
+		TERMINALS
 	);
 	match parser.make_table() {
 		Err(msg) => {
@@ -199,9 +269,9 @@ fn parse_parser(contents : &mut String) {
 			}
 			return;
 		}
-		Ok((_, warnings)) => {
-			//println!("{}", stree);
-			println!("{}", warnings);
+		Ok((stree, warnings)) => {
+			//println!("{stree}");
+			println!("{warnings}");
 		}
 	}
 	println!("Parsing succeeded !");

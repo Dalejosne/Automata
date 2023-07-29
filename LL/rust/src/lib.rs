@@ -505,6 +505,7 @@ impl<'a> LL1Parser<'a> {
 					i_top -= 1;
 					let last_vertex = match tree_stack.pop() {
 						Some((mut vertex, _, i_action)) => {
+							println!("{i_action}");
 							self.actions[i_action as usize](&mut vertex);
 							vertex
 						}
@@ -589,7 +590,6 @@ impl<'a> LL1Parser<'a> {
 				} else {
 					//Here, we handle UEOF
 					if token_act.id == default_id::EOF {
-						println!("EXPECTED");
 						return Err(SyntaxError::new(
 							UEOF,
 							None,
@@ -601,16 +601,18 @@ impl<'a> LL1Parser<'a> {
 					return Err(
 						SyntaxError::new(
 							0,
-							None,
+							Some(Token::Terminal{id : token_act.id, value : token_act.value, pos : token_act.pos}),
 							format!(
-								"There is no rule which correspond to the derivation : Rule {top} doesn't begin by token {}",
-								token_act.id
+						"There is no rule which correspond to the derivation : No derivation of the rule {} begins by token {}",
+								top - self.nt_begin,
+								token_act.id,
 							)
 						)
 					);
 				}
 			}
 			let len = self.derivations[d_i].len();
+			println!("di : {d_i} = [{}][{}]", top - self.nt_begin, token_act.id);
 			tree_stack.push(
 				(
 				STree {children : Vec::with_capacity(len), value : Token::NTerminal{id : top}},
