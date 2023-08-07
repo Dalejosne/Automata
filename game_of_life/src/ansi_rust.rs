@@ -37,14 +37,16 @@ pub fn refresh() {
     println!()
 }
 
-///Enter the alternate terminal not to clear all of it
+///Enter the alternate terminal in raw mode not to clear all of it
 pub fn enter_alternate() -> Result<(), io::Error> {
+	crossterm::terminal::enable_raw_mode()?;
     execute!(io::stdout(), EnterAlternateScreen)?;
     Ok(())
 }
 
 ///Leave the alternate screen and come back to the old terminal
 pub fn leave_alternate() -> Result<(), io::Error> {
+	crossterm::terminal::disable_raw_mode()?;
     execute!(io::stdout(), LeaveAlternateScreen)?;
     Ok(())
 }
