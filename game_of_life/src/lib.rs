@@ -14,6 +14,7 @@ pub use ansi_rust::*;
 ///Class of game of life.\
 ///To create a new game of life with a grid of 25 collumns wide and 45 lines height, use :\
 ///```rust
+///use gol_lib::GameOfLife;
 ///fn main(){
 ///    let mut game = GameOfLife::new(25, 45);
 ///}
@@ -43,6 +44,7 @@ impl GameOfLife {
     ///For exemple, to set the element at position 5, 5 (e.g. to make the cell alive), do :\
     /// /!\ Pay attention ! : It is the collumn first, and **then** the line.\
     ///```rust
+    ///use gol_lib::GameOfLife;
     ///fn main(){
     ///    let mut game = GameOfLife::new(25, 45);
     ///    game.set_element(5,5);
@@ -55,6 +57,7 @@ impl GameOfLife {
     ///For exemple, to reset the element at position 5, 5 (e.g. to kill the cell), do :\
     /// /!\ Pay attention ! : It is the collumn first, and **then** the line.\
     ///```rust
+    ///use gol_lib::GameOfLife;
     ///fn main(){
     ///    let mut game = GameOfLife::new(25, 45);
     ///    game.unset_element(5,5);
@@ -66,6 +69,7 @@ impl GameOfLife {
     ///Function to show the actual state of the game.\
     ///For example :\
     ///```rust
+    ///use gol_lib::GameOfLife;
     ///fn main(){
     ///    let mut game = GameOfLife::new(25, 45);
     ///    game.show();
@@ -85,6 +89,7 @@ impl GameOfLife {
     ///Function which updates the game (e.g. pass to the next state)\
     ///For example :\
     ///```rust
+    ///use gol_lib::GameOfLife;
     ///fn main(){
     ///    let mut game = GameOfLife::new(25, 45);
     ///    game.update();
