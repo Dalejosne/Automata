@@ -39,8 +39,8 @@ pub fn refresh() {
 
 ///Enter the alternate terminal in raw mode not to clear all of it
 pub fn enter_alternate() -> Result<(), io::Error> {
-	crossterm::terminal::enable_raw_mode()?;
     execute!(io::stdout(), EnterAlternateScreen)?;
+	crossterm::terminal::enable_raw_mode()?;
     Ok(())
 }
 

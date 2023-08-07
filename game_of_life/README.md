@@ -41,6 +41,7 @@ fn main(){
 		if crossterm::event::poll(Duration::from_secs(0)).unwrap() {
 			if is_ctrl_c(crossterm::event::read().unwrap()).unwrap() {
 				leave_alternate().unwrap();
+				show_cursor().unwrap();
 				process::exit(0);
 			}
 		}
