@@ -1,5 +1,7 @@
 // copyright Damien Lejosne 2021. See LICENSE for more informations
 //! This crate will be usefull to play with diplaying on the terminal
+use std::io;
+use crossterm::{self, execute, terminal::{EnterAlternateScreen, LeaveAlternateScreen}};
 
 ///Reverse the color of the text which will be write on the screen
 pub fn reverse(){
@@ -19,9 +21,22 @@ pub fn show(c:char, x:usize, y:usize){
 }
 ///Clear the screen
 pub fn clear(){
-	print!("\x1B[2J");
+	execute!(io::stdout(), crossterm::terminal::Clear(crossterm::terminal::ClearType::All)).unwrap();
 }
 ///Refresh the screen e.g. show it
 pub fn refresh(){
 	println!()
+}
+
+///Enter the alternate terminal not to clear all of it
+pub fn enter_alternate() -> Result<(), io::Error> {
+	execute!(io::stdout(), EnterAlternateScreen)?;
+	Ok(())
+}
+
+
+///Leave the alternate screen and come back to the old terminal
+pub fn leave_alternate() -> Result<(), io::Error> {
+	execute!(io::stdout(), LeaveAlternateScreen)?;
+	Ok(())
 }
