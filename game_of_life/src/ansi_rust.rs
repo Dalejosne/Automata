@@ -2,12 +2,11 @@
 //! This crate will be usefull to play with diplaying on the terminal
 use crossterm::{
     self, cursor,
-    event::{poll, read, Event, KeyCode, KeyEventKind, KeyModifiers},
+    event::{Event, KeyCode, KeyEventKind, KeyModifiers},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, SetTitle},
 };
 use std::io;
-use std::time::Duration;
 
 ///Reverse the color of the text which will be write on the screen
 pub fn reverse() {
