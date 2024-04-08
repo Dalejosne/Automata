@@ -36,7 +36,7 @@ fn main() {
 	let a_ = Token::Terminal{id : a, value : String::from("a"), pos : 0};
 	let mut ind = 0;
 	//To simplify the example, we use a lot of clone. It should not be necessary in real usage.
-	let tokens = vec![r_p.clone(),
+	let tokens = vec![l_p.clone(),
 					  l_p.clone(),
 					  l_p.clone(),
 					  l_p.clone(),

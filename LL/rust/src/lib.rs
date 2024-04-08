@@ -657,7 +657,7 @@ impl<'a> LL1Parser<'a> {
 		}
 	}
 
-	pub fn get_table(&self) -> &Vec<Vec<u32>> {
+	fn get_table(&self) -> &Vec<Vec<u32>> {
 		&self.table
 	}
 }

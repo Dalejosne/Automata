@@ -59,5 +59,6 @@ Have fun ! ;-)\n");
         stree_eval(tree_act, out);
         delete_stree(tree_act);
     }
+	delete_buffer(buffer);
     return 0;
 }

@@ -1,3 +1,5 @@
 game_of_life/target
 LL/rust/target/
 LL/C
+brainfuck/anc/build/*
+brainfuck/anc/docs/build
